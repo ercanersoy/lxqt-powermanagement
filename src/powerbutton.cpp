@@ -37,6 +37,9 @@
 #include <LXQt/Notification>
 #include <LXQt/Power>
 #include <lxqt-globalkeys.h>
+
+#include <XdgDesktopFile>
+
 #include <unistd.h>
 
 PowerButton::PowerButton(QObject *parent) : Watcher(parent)
@@ -123,12 +126,20 @@ void PowerButton::handleShortcutHibernate()
 void PowerButton::runAction(int action)
 {
     PowerManagementSettings mSettings;
-    if(action != LXQt::Power::PowerMonitorOff)
-        doAction(mSettings.getPowerKeyAction());
-    else {
+    if(action == LXQt::Power::PowerMonitorOff) {
         QTimer::singleShot(1000, this, [this]() {
             qDebug() << "LXQt::Power::PowerMonitorOff";
             doAction(LXQt::Power::PowerMonitorOff);
         });
+    } else if (action == -3) { // Ask
+        XdgDesktopFile ask;
+        const bool ok = ask.load(QSL("lxqt-leave.desktop"));
+        if (ok) {
+            ask.startDetached();
+        } else {
+            qWarning() << Q_FUNC_INFO << "lxqt-leave not found.";
+        }
+    } else {
+        doAction(mSettings.getPowerKeyAction());
     }
 }
